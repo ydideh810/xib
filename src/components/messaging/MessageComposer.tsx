@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Image, Film } from 'lucide-react';
-import { VoiceButton } from '../VoiceButton';
+import { Send, Camera, Video, Mic } from 'lucide-react';
 import { VoiceRecorder } from './VoiceRecorder';
 import { MediaUpload } from './MediaUpload';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
@@ -12,25 +11,18 @@ interface MessageComposerProps {
   recipientName: string;
 }
 
-export function MessageComposer({ 
-  onSendMessage, 
+export function MessageComposer({
+  onSendMessage,
   onSendMedia,
-  onSendVoiceNote, 
-  recipientName 
+  onSendVoiceNote,
+  recipientName
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const { isListening, transcript, startListening, stopListening, error } = useSpeechRecognition();
+  const [showMediaButtons, setShowMediaButtons] = useState(false);
+  const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
 
   const handleSend = () => {
-    if (selectedImage) {
-      onSendMedia(selectedImage, 'image');
-      setSelectedImage(null);
-    } else if (selectedVideo) {
-      onSendMedia(selectedVideo, 'video');
-      setSelectedVideo(null);
-    } else if (message.trim()) {
+    if (message.trim()) {
       onSendMessage(message.trim());
       setMessage('');
     }
@@ -44,74 +36,52 @@ export function MessageComposer({
   };
 
   return (
-    <div className="space-y-2">
-      {(selectedImage || selectedVideo) && (
-        <div className="flex gap-2">
-          <MediaUpload
-            type="image"
-            onFileSelect={setSelectedImage}
-            onClear={() => setSelectedImage(null)}
-            selectedFile={selectedImage}
-          />
-          <MediaUpload
-            type="video"
-            onFileSelect={setSelectedVideo}
-            onClear={() => setSelectedVideo(null)}
-            selectedFile={selectedVideo}
-          />
-        </div>
-      )}
-      
-      <div className="flex gap-2">
-        <textarea
+    <div className="sticky bottom-0 bg-black border-t border-[#333333] p-3">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowMediaButtons(!showMediaButtons)}
+          className="terminal-button p-2"
+        >
+          <Camera className="h-5 w-5" />
+        </button>
+        
+        {showMediaButtons && (
+          <>
+            <MediaUpload
+              type="image"
+              onFileSelect={(file) => onSendMedia(file, 'image')}
+              onClear={() => {}}
+              selectedFile={null}
+            />
+            <MediaUpload
+              type="video"
+              onFileSelect={(file) => onSendMedia(file, 'video')}
+              onClear={() => {}}
+              selectedFile={null}
+            />
+          </>
+        )}
+
+        <input
+          type="text"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={`Message ${recipientName}...`}
-          className="terminal-input flex-1 min-h-[40px] max-h-[120px] resize-y"
-          rows={1}
+          placeholder="Message"
+          className="flex-1 bg-[#1a1a1a] text-white rounded-full px-4 py-2 text-[14px] focus:outline-none focus:ring-1 focus:ring-[#00ff9d]"
         />
-        <div className="flex flex-col gap-2">
-          {!selectedImage && !selectedVideo && (
-            <>
-              <MediaUpload
-                type="image"
-                onFileSelect={setSelectedImage}
-                onClear={() => setSelectedImage(null)}
-                selectedFile={selectedImage}
-              />
-              <MediaUpload
-                type="video"
-                onFileSelect={setSelectedVideo}
-                onClear={() => setSelectedVideo(null)}
-                selectedFile={selectedVideo}
-              />
-            </>
-          )}
-          <VoiceButton
-            isListening={isListening}
-            onClick={isListening ? stopListening : startListening}
-            disabled={!!error}
-          />
+
+        {message.trim() ? (
           <button
             onClick={handleSend}
-            className="terminal-button h-9 md:h-10 px-2 md:px-3"
-            aria-label="Send message"
+            className="terminal-button p-2"
           >
-            <Send className="h-3 w-3 md:h-4 md:w-4" />
+            <Send className="h-5 w-5" />
           </button>
+        ) : (
           <VoiceRecorder onSendVoiceNote={onSendVoiceNote} />
-        </div>
+        )}
       </div>
-      
-      {error && (
-        <p className="text-red-500 terminal-text text-[8px] md:text-[10px]">{error}</p>
-      )}
-      {isListening && (
-        <p className="text-[#00ff9d] terminal-text text-[8px] md:text-[10px] animate-pulse">
-          Listening...
-        </p>
-      )}
     </div>
   );
 }
